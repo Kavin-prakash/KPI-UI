@@ -975,7 +975,7 @@ import PromptPanel from './Views/PromptPanel';
 import axios from 'axios';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import orglogo from '../src/Asserts/Relevantz_Logo.png';
-
+import AiImage from '../src/Asserts/Artificial intelligence-bro.png'
 // Set up the worker for PDF.js
 pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
@@ -1198,11 +1198,12 @@ function App() {
               onPageRenderSuccess={handlePageRenderSuccess}
             />
           ) : (
-            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-              <Typography variant="h5" color="text.secondary">Upload a PDF or enter a prompt to get started!</Typography>
+            <Box sx={{mt:2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+              <Typography variant="h5" color="text.secondary">Upload a PDF and enter a prompt to get started!</Typography>
               <Typography variant="subtitle1" color="text.secondary" mt={1}>
-                You can ask questions like: "What is the capital call amount?" or "Summarize this document."
+                You can ask questions like: "What is the capital call amount?" or "Extract default capital call attributes."
               </Typography>
+              <img src={AiImage} style={{ height: '700px', width: '700px' }} />
             </Box>
           )}
 
