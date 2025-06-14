@@ -974,9 +974,10 @@ import KPIPanel from './Views/KPIPanel';
 import PromptPanel from './Views/PromptPanel';
 import axios from 'axios';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
-import orglogo from '../src/Asserts/Relevantz_Logo.png'
+import orglogo from '../src/Asserts/Relevantz_Logo.png';
+
 // Set up the worker for PDF.js
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 interface Message {
   text: string;
@@ -1006,8 +1007,6 @@ interface KPI {
   };
 }
 
-// Your PDFPreview component remains the same if it's only for initial file preview
-
 function App() {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -1019,19 +1018,29 @@ function App() {
   const [scale, setScale] = useState(1.5);
   const [extractedKPIs, setExtractedKPIs] = useState<KPI[]>([]);
   const [selectedKPI, setSelectedKPI] = useState<KPI | null>(null);
-  const [highlightedText, setHighlightedText] = useState<string | null>(null); // This might be redundant if you're highlighting based on KPI position
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Function to handle file upload and clear previous state
+  const handleFileUpload = (newFile: File | null) => {
+    // Clear previous responses immediately when a new file is selected
+    setHighlightedPdfUrl(null);
+    setExtractedKPIs([]);
+    setSelectedKPI(null); // Also clear selected KPI
+    setNumPages(null); // Reset page count
+    setPageNumber(1); // Reset to first page
+    setFile(newFile); // Set the new file
+  };
+
   const handlePromptSubmit = async () => {
-    if (!prompt.trim() && !file) { // Ensure either prompt or file is present
+    if (!prompt.trim() && !file) {
       setError("Please enter a prompt or upload a file.");
       return;
     }
 
     setIsLoading(true);
     setError(null);
-    setExtractedKPIs([]); // Clear previous KPIs
-    setHighlightedPdfUrl(null); // Clear previous highlighted PDF
+    // KPI and highlighted PDF are cleared by handleFileUpload if a new file is uploaded
+    // or when the API call is made for a new prompt/file combination.
 
     try {
       const formdata = new FormData();
@@ -1065,7 +1074,6 @@ function App() {
         setExtractedKPIs(mockKPIs);
       }
 
-
     } catch (error: any) {
       console.error("Error during API Call:", error);
       setError(error.response?.data?.message || "An error occurred while processing your request.");
@@ -1077,7 +1085,6 @@ function App() {
   const handleKpiClick = (kpi: KPI) => {
     setSelectedKPI(kpi);
     setPageNumber(kpi.pageNumber); // This assumes your backend provides pageNumber for KPIs
-    setHighlightedText(`${kpi.label}: ${kpi.value}`);
 
     // Scroll to the PDF viewer
     const pdfViewer = document.querySelector('.pdf-content'); // Ensure this selector matches your PDFViewer's root element
@@ -1128,7 +1135,7 @@ function App() {
       const highlights = document.querySelectorAll('.highlighted-text');
       highlights.forEach(highlight => highlight.remove());
     };
-  }, [pageNumber, highlightedPdfUrl]); // Also clean up when a new PDF is loaded
+  }, [pageNumber, highlightedPdfUrl, file]); // Also clean up when a new PDF is loaded or file changes
 
   return (
     <Box sx={{
@@ -1144,13 +1151,12 @@ function App() {
         bgcolor: 'white',
         borderBottom: '1px solid #e0e0e0',
         display: 'flex',
-        // alignItems: 'center',
-        // justifyContent: 'space-between'
+        columnGap: '500px',
+        justifyContent: 'flex-start'
       }}>
-        <img style={{height:'100px',width:'200px'}} src={orglogo}></img>
-        <Typography variant="h5" component="h1">
-          {/* Financial Doc Analyzer */}
-          AI-Powered KPI Extraction for Financial Document
+        <img style={{ height: '55px', width: '280px' }} src={orglogo}></img>
+        <Typography variant="h4" component="h1">
+          DocAI Extractor
         </Typography>
       </Box>
 
@@ -1236,7 +1242,7 @@ function App() {
         handlePromptSubmit={handlePromptSubmit}
         isLoading={isLoading}
         fileInputRef={fileInputRef}
-        setFile={setFile}
+        handleFileUpload={handleFileUpload} // Pass the new centralized function
       />
 
       {/* Error Snackbar */}
