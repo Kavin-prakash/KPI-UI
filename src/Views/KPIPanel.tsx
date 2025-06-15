@@ -898,9 +898,9 @@ const KPIPanel: React.FC<KPIPanelProps> = ({ extractedKPIs, selectedKPI, handleK
                     <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem', mb: 1 }}>
                         Extractions
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    {/* <Typography variant="caption" color="text.secondary">
                         Click on a metric to highlight it in the document
-                    </Typography>
+                    </Typography> */}
                 </Box>
                 <Box sx={{
                     flex: 1,
@@ -922,7 +922,7 @@ const KPIPanel: React.FC<KPIPanelProps> = ({ extractedKPIs, selectedKPI, handleK
                     },
                 }}>
                     {kpis.map((kpi) => (
-                        <Box key={kpi.id} sx={{ mb: 1, position: 'relative' }}>
+                        <Box key={kpi.id} sx={{ mb:1, position: 'relative' }}>
                             <Chip
                                 label={<span>{kpi.label}: {kpi.value}</span>}
                                 icon={getKPIIcon(kpi)}
@@ -931,7 +931,7 @@ const KPIPanel: React.FC<KPIPanelProps> = ({ extractedKPIs, selectedKPI, handleK
                                     justifyContent: 'flex-start',
                                     height: 'auto',
                                     minHeight: '40px',
-                                    padding: '8px 16px',
+                                    padding: '10px 16px',
                                     borderRadius: '20px',
                                     transition: 'all 0.3s ease',
                                     // MODIFIED: Apply very low opacity background based on KPI color
@@ -958,7 +958,8 @@ const KPIPanel: React.FC<KPIPanelProps> = ({ extractedKPIs, selectedKPI, handleK
                                         fontSize: '0.875rem',
                                         fontWeight: 600,
                                         lineHeight: 1.4,
-                                        padding: '0 0 0 4px',
+                                        // MODIFIED: Increased padding-left to create more space from the icon
+                                        padding: '0 0 0 8px', // Increased from 4px to 8px
                                     },
                                 }}
                             />

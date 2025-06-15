@@ -1264,8 +1264,8 @@
 // export default App;
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Box, TextField, IconButton, Paper, Typography, CircularProgress, Alert, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip, Stack } from '@mui/material';
-import { Mic, AttachFile, Close, Send, MicOff, Visibility } from '@mui/icons-material';
+import { Box, TextField, IconButton, Paper, Typography, CircularProgress, Alert, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip, Stack, Grid, Tooltip, Menu, MenuItem } from '@mui/material';
+import { Mic, AttachFile, Close, Send, MicOff, Visibility, Settings } from '@mui/icons-material';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -1277,6 +1277,8 @@ import axios from 'axios';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import orglogo from '../src/Asserts/Relevantz_Logo.png';
 import AiImage from '../src/Asserts/Artificial intelligence-bro.png';
+import PopupState, { bindTrigger, bindMenu } from 'material-ui-popup-state';
+import CheckIcon from '@mui/icons-material/Check';
 
 // Set up the worker for PDF.js
 pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
@@ -1465,14 +1467,32 @@ function App() {
         bgcolor: 'white',
         borderBottom: '1px solid #e0e0e0',
         display: 'flex',
-        columnGap: '500px',
-        justifyContent: 'flex-start'
+        // Removed columnGap and adjusted justifyContent
+        justifyContent: 'space-between', // This will push items to the start and end
+        alignItems: 'center' // Vertically center items if needed
       }}>
         <img style={{ height: '55px', width: '280px' }} src={orglogo}></img>
-        <Typography variant="h4" component="h1">
-          DocAI Extractor
+        <Typography style={{marginRight:'200px'}} variant="h4" component="h1">
+          Doc<span style={{ color: 'red' }}>Ai</span> Extractor
         </Typography>
+        <PopupState variant="popover" popupId="demo-popup-menu">
+          {(popupState) => (
+            <React.Fragment>
+              <Tooltip title='Choose Model' placement='right' >
+                <Button sx={{ bgcolor: '#24125F' }} variant="contained" {...bindTrigger(popupState)}>
+                  <Settings />
+                </Button>
+              </Tooltip>
+              <Menu {...bindMenu(popupState)}>
+                <MenuItem onClick={popupState.close}><CheckIcon />Ollama llama3</MenuItem>
+                <MenuItem disabled onClick={popupState.close}>Gemini Flash 2.5</MenuItem>
+                <MenuItem disabled onClick={popupState.close}>ChatGpt 4.0 </MenuItem>
+              </Menu>
+            </React.Fragment>
+          )}
+        </PopupState>
       </Box>
+
 
       {/* Main Content */}
       <Box sx={{
@@ -1512,8 +1532,8 @@ function App() {
               onPageRenderSuccess={handlePageRenderSuccess}
             />
           ) : (
-            <Box sx={{mt:2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-              <Typography variant="h5" color="text.secondary">Upload a PDF and enter a prompt to get started!</Typography>
+            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+              <Typography variant="h5" color="text.secondary">Upload and start interacting with PDF</Typography>
               <Typography variant="subtitle1" color="text.secondary" mt={1}>
                 You can ask questions like: "What is the capital call amount?" or "Extract default capital call attributes."
               </Typography>
@@ -1571,7 +1591,7 @@ function App() {
           {error}
         </Alert>
       </Snackbar>
-    </Box>
+    </Box >
   );
 }
 
