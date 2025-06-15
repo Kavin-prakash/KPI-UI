@@ -962,6 +962,307 @@
 
 // export default App;
 
+// import React, { useState, useCallback, useEffect, useRef } from 'react';
+// import { Box, TextField, IconButton, Paper, Typography, CircularProgress, Alert, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip, Stack } from '@mui/material';
+// import { Mic, AttachFile, Close, Send, MicOff, Visibility } from '@mui/icons-material';
+// import { Document, Page, pdfjs } from 'react-pdf';
+// import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+// import 'react-pdf/dist/esm/Page/TextLayer.css';
+// import './App.css';
+// import PDFViewer from './Views/PDFViewer'; // Assuming PDFViewer can handle a URL
+// import KPIPanel from './Views/KPIPanel';
+// import PromptPanel from './Views/PromptPanel';
+// import axios from 'axios';
+// import SmartToyIcon from '@mui/icons-material/SmartToy';
+// import orglogo from '../src/Asserts/Relevantz_Logo.png';
+// import AiImage from '../src/Asserts/Artificial intelligence-bro.png'
+// // Set up the worker for PDF.js
+// pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
+
+// interface Message {
+//   text: string;
+//   isUser: boolean;
+//   timestamp: Date;
+// }
+
+// interface PDFPreviewProps {
+//   file: File;
+//   onClose: () => void;
+// }
+
+// interface KPI {
+//   id: string;
+//   label: string;
+//   value: string;
+//   pageNumber: number;
+//   position: {
+//     x: number;
+//     y: number;
+//   };
+//   box: {
+//     x: number;
+//     y: number;
+//     width: number;
+//     height: number;
+//   };
+// }
+
+// function App() {
+//   const [prompt, setPrompt] = useState('');
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
+//   const [file, setFile] = useState<File | null>(null); // For initial file upload
+//   const [highlightedPdfUrl, setHighlightedPdfUrl] = useState<string | null>(null); // New state for highlighted PDF URL
+//   const [numPages, setNumPages] = useState<number | null>(null);
+//   const [pageNumber, setPageNumber] = useState(1);
+//   const [scale, setScale] = useState(1.5);
+//   const [extractedKPIs, setExtractedKPIs] = useState<KPI[]>([]);
+//   const [selectedKPI, setSelectedKPI] = useState<KPI | null>(null);
+//   const fileInputRef = useRef<HTMLInputElement>(null);
+
+//   // Function to handle file upload and clear previous state
+//   const handleFileUpload = (newFile: File | null) => {
+//     // Clear previous responses immediately when a new file is selected
+//     setHighlightedPdfUrl(null);
+//     setExtractedKPIs([]);
+//     setSelectedKPI(null); // Also clear selected KPI
+//     setNumPages(null); // Reset page count
+//     setPageNumber(1); // Reset to first page
+//     setFile(newFile); // Set the new file
+//   };
+
+//   const handlePromptSubmit = async () => {
+//     if (!prompt.trim() && !file) {
+//       setError("Please enter a prompt or upload a file.");
+//       return;
+//     }
+
+//     setIsLoading(true);
+//     setError(null);
+//     // KPI and highlighted PDF are cleared by handleFileUpload if a new file is uploaded
+//     // or when the API call is made for a new prompt/file combination.
+
+//     try {
+//       const formdata = new FormData();
+//       formdata.append('userinput', prompt);
+//       if (file) {
+//         formdata.append('file', file);
+//       }
+//       setFile(null); // Clear the selected file after sending
+//       setPrompt(''); // Clear the prompt after sending
+
+//       const apiResponse = await axios.post('http://127.0.0.1:5000/upload_ollama', formdata);
+//       console.log("API Response", apiResponse.data);
+
+//       const { highlighted_pdf_url, result } = apiResponse.data;
+
+//       // Set the highlighted PDF URL
+//       if (highlighted_pdf_url) {
+//         setHighlightedPdfUrl(`http://127.0.0.1:5000${highlighted_pdf_url}`); // Prepend your backend URL if necessary
+//       }
+
+//       // Process and set extracted KPIs from `result` if available
+//       if (result) {
+//         const mockKPIs: KPI[] = Object.entries(result).map(([label, value], idx) => ({
+//           id: (idx + 1).toString(),
+//           label: label.replace(/([A-Z])/g, ' $1').trim(), // Format label for display (e.g., "LP Name" from "LPName")
+//           value: String(value), // Ensure value is a string
+//           pageNumber: 1, // You'll need to get actual page numbers from your backend for highlighting if available
+//           position: { x: 0, y: 0 }, // Placeholder, actual position depends on backend
+//           box: { x: 0, y: 0, width: 0, height: 0 } // Placeholder, actual box depends on backend
+//         }));
+//         setExtractedKPIs(mockKPIs);
+//       }
+
+//     } catch (error: any) {
+//       console.error("Error during API Call:", error);
+//       setError(error.response?.data?.message || "An error occurred while processing your request.");
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   const handleKpiClick = (kpi: KPI) => {
+//     setSelectedKPI(kpi);
+//     setPageNumber(kpi.pageNumber); // This assumes your backend provides pageNumber for KPIs
+
+//     // Scroll to the PDF viewer
+//     const pdfViewer = document.querySelector('.pdf-content'); // Ensure this selector matches your PDFViewer's root element
+//     if (pdfViewer) {
+//       pdfViewer.scrollIntoView({ behavior: 'smooth' });
+//     }
+//   };
+
+//   const handleDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+//     setNumPages(numPages);
+//   };
+
+//   const handlePageRenderSuccess = (page: any) => {
+//     // This part should be handled within your PDFViewer component or
+//     // carefully integrated here. If KPI positions are in PDF coordinates,
+//     // you'll need to scale them correctly.
+//     const existingHighlights = document.querySelectorAll('.highlighted-text');
+//     existingHighlights.forEach(highlight => highlight.remove());
+
+//     if (selectedKPI && selectedKPI.pageNumber === pageNumber) {
+//       const highlightBox = document.createElement('div');
+//       highlightBox.className = 'highlighted-text';
+//       // These coordinates (selectedKPI.box.x, y, width, height) must be
+//       // relative to the PDF page and scaled appropriately by react-pdf.
+//       // You might need to adjust them based on the 'scale' prop of <Page>.
+//       highlightBox.style.position = 'absolute';
+//       highlightBox.style.left = `${selectedKPI.box.x * scale}px`; // Apply scale
+//       highlightBox.style.top = `${selectedKPI.box.y * scale}px`; // Apply scale
+//       highlightBox.style.width = `${selectedKPI.box.width * scale}px`; // Apply scale
+//       highlightBox.style.height = `${selectedKPI.box.height * scale}px`; // Apply scale
+//       highlightBox.style.backgroundColor = 'rgba(255, 235, 59, 0.3)';
+//       highlightBox.style.borderRadius = '4px';
+//       highlightBox.style.pointerEvents = 'none';
+//       highlightBox.style.zIndex = '1';
+//       highlightBox.style.border = `2px solid #2196F3`;
+
+//       const pageElement = document.querySelector('.react-pdf__Page'); // This selects the current page
+//       if (pageElement) {
+//         pageElement.appendChild(highlightBox);
+//         highlightBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+//       }
+//     }
+//   };
+
+//   // Add cleanup function to remove highlights when changing pages or unmounting
+//   useEffect(() => {
+//     return () => {
+//       const highlights = document.querySelectorAll('.highlighted-text');
+//       highlights.forEach(highlight => highlight.remove());
+//     };
+//   }, [pageNumber, highlightedPdfUrl, file]); // Also clean up when a new PDF is loaded or file changes
+
+//   return (
+//     <Box sx={{
+//       height: '100vh',
+//       display: 'flex',
+//       flexDirection: 'column',
+//       bgcolor: '#f5f5f5',
+//       position: 'relative'
+//     }}>
+//       {/* Header */}
+//       <Box sx={{
+//         p: 2,
+//         bgcolor: 'white',
+//         borderBottom: '1px solid #e0e0e0',
+//         display: 'flex',
+//         columnGap: '500px',
+//         justifyContent: 'flex-start'
+//       }}>
+//         <img style={{ height: '55px', width: '280px' }} src={orglogo}></img>
+//         <Typography variant="h4" component="h1">
+//           DocAI Extractor
+//         </Typography>
+//       </Box>
+
+//       {/* Main Content */}
+//       <Box sx={{
+//         flex: 1,
+//         display: 'flex',
+//         flexDirection: 'row',
+//         overflow: 'hidden',
+//         position: 'relative'
+//       }}>
+//         {/* Left Side - PDF and other content */}
+//         <Box sx={{
+//           flex: 1,
+//           display: 'flex',
+//           flexDirection: 'column',
+//           overflow: 'hidden',
+//           minWidth: 0 // Prevent flex item from overflowing
+//         }}>
+//           {/* Conditional rendering for PDF Viewer */}
+//           {highlightedPdfUrl ? (
+//             <PDFViewer
+//               file={highlightedPdfUrl} // Pass the URL here
+//               pageNumber={pageNumber}
+//               setPageNumber={setPageNumber}
+//               numPages={numPages}
+//               scale={scale}
+//               onDocumentLoadSuccess={handleDocumentLoadSuccess}
+//               onPageRenderSuccess={handlePageRenderSuccess}
+//             />
+//           ) : file ? ( // Show original uploaded file if no highlighted PDF yet
+//             <PDFViewer
+//               file={file}
+//               pageNumber={pageNumber}
+//               setPageNumber={setPageNumber}
+//               numPages={numPages}
+//               scale={scale}
+//               onDocumentLoadSuccess={handleDocumentLoadSuccess}
+//               onPageRenderSuccess={handlePageRenderSuccess}
+//             />
+//           ) : (
+//             <Box sx={{mt:2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+//               <Typography variant="h5" color="text.secondary">Upload a PDF and enter a prompt to get started!</Typography>
+//               <Typography variant="subtitle1" color="text.secondary" mt={1}>
+//                 You can ask questions like: "What is the capital call amount?" or "Extract default capital call attributes."
+//               </Typography>
+//               <img src={AiImage} style={{ height: '700px', width: '700px' }} />
+//             </Box>
+//           )}
+
+//           {/* Centered loading spinner when waiting for KPI response */}
+//           {isLoading && (
+//             <Box sx={{
+//               position: 'absolute',
+//               top: 0,
+//               left: 0,
+//               width: '100%',
+//               height: '100%',
+//               display: 'flex',
+//               alignItems: 'center',
+//               justifyContent: 'center',
+//               zIndex: 2000,
+//               background: 'rgba(255,255,255,0.7)'
+//             }}>
+//               <CircularProgress size={64} />
+//             </Box>
+//           )}
+//         </Box>
+
+//         {/* Right Sidebar - KPI Section */}
+//         {extractedKPIs.length > 0 && !isLoading && (
+//           <KPIPanel
+//             extractedKPIs={extractedKPIs}
+//             selectedKPI={selectedKPI}
+//             handleKpiClick={handleKpiClick}
+//           />
+//         )}
+//       </Box>
+
+//       {/* Prompt Input */}
+//       <PromptPanel
+//         prompt={prompt}
+//         setPrompt={setPrompt}
+//         handlePromptSubmit={handlePromptSubmit}
+//         isLoading={isLoading}
+//         fileInputRef={fileInputRef}
+//         handleFileUpload={handleFileUpload} // Pass the new centralized function
+//       />
+
+//       {/* Error Snackbar */}
+//       <Snackbar
+//         open={!!error}
+//         autoHideDuration={6000}
+//         onClose={() => setError(null)}
+//         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+//       >
+//         <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+//           {error}
+//         </Alert>
+//       </Snackbar>
+//     </Box>
+//   );
+// }
+
+// export default App;
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Box, TextField, IconButton, Paper, Typography, CircularProgress, Alert, Snackbar, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip, Stack } from '@mui/material';
 import { Mic, AttachFile, Close, Send, MicOff, Visibility } from '@mui/icons-material';
@@ -975,7 +1276,8 @@ import PromptPanel from './Views/PromptPanel';
 import axios from 'axios';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import orglogo from '../src/Asserts/Relevantz_Logo.png';
-import AiImage from '../src/Asserts/Artificial intelligence-bro.png'
+import AiImage from '../src/Asserts/Artificial intelligence-bro.png';
+
 // Set up the worker for PDF.js
 pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
@@ -1005,6 +1307,7 @@ interface KPI {
     width: number;
     height: number;
   };
+  color?: string; // Added color property to KPI interface
 }
 
 function App() {
@@ -1063,10 +1366,11 @@ function App() {
 
       // Process and set extracted KPIs from `result` if available
       if (result) {
-        const mockKPIs: KPI[] = Object.entries(result).map(([label, value], idx) => ({
+        const mockKPIs: KPI[] = Object.entries(result).map(([label, data]: [string, any], idx) => ({ // Changed value to data
           id: (idx + 1).toString(),
           label: label.replace(/([A-Z])/g, ' $1').trim(), // Format label for display (e.g., "LP Name" from "LPName")
-          value: String(value), // Ensure value is a string
+          value: String(data.value), // Access the nested 'value' property
+          color: data.color, // Store the color from the API response
           pageNumber: 1, // You'll need to get actual page numbers from your backend for highlighting if available
           position: { x: 0, y: 0 }, // Placeholder, actual position depends on backend
           box: { x: 0, y: 0, width: 0, height: 0 } // Placeholder, actual box depends on backend
@@ -1098,30 +1402,40 @@ function App() {
   };
 
   const handlePageRenderSuccess = (page: any) => {
-    // This part should be handled within your PDFViewer component or
-    // carefully integrated here. If KPI positions are in PDF coordinates,
-    // you'll need to scale them correctly.
     const existingHighlights = document.querySelectorAll('.highlighted-text');
     existingHighlights.forEach(highlight => highlight.remove());
 
     if (selectedKPI && selectedKPI.pageNumber === pageNumber) {
       const highlightBox = document.createElement('div');
       highlightBox.className = 'highlighted-text';
-      // These coordinates (selectedKPI.box.x, y, width, height) must be
-      // relative to the PDF page and scaled appropriately by react-pdf.
-      // You might need to adjust them based on the 'scale' prop of <Page>.
+
       highlightBox.style.position = 'absolute';
-      highlightBox.style.left = `${selectedKPI.box.x * scale}px`; // Apply scale
-      highlightBox.style.top = `${selectedKPI.box.y * scale}px`; // Apply scale
-      highlightBox.style.width = `${selectedKPI.box.width * scale}px`; // Apply scale
-      highlightBox.style.height = `${selectedKPI.box.height * scale}px`; // Apply scale
-      highlightBox.style.backgroundColor = 'rgba(255, 235, 59, 0.3)';
+      highlightBox.style.left = `${selectedKPI.box.x * scale}px`;
+      highlightBox.style.top = `${selectedKPI.box.y * scale}px`;
+      highlightBox.style.width = `${selectedKPI.box.width * scale}px`;
+      highlightBox.style.height = `${selectedKPI.box.height * scale}px`;
+
+      // Determine highlight color based on KPI color or fallback to a light yellow
+      let highlightBgColor = 'rgba(255, 235, 59, 0.05)'; // Very low opacity yellow by default
+      let highlightBorderColor = '#2196F3'; // Default blue border
+
+      if (selectedKPI.color) {
+        // Convert hex color to RGB for the background with low opacity
+        const r = parseInt(selectedKPI.color.substring(1, 3), 16);
+        const g = parseInt(selectedKPI.color.substring(3, 5), 16);
+        const b = parseInt(selectedKPI.color.substring(5, 7), 16);
+        highlightBgColor = `rgba(${r}, ${g}, ${b}, 0.05)`; // Very low opacity
+        highlightBorderColor = selectedKPI.color; // Use the exact KPI color for the border
+      }
+
+      highlightBox.style.backgroundColor = highlightBgColor;
       highlightBox.style.borderRadius = '4px';
       highlightBox.style.pointerEvents = 'none';
       highlightBox.style.zIndex = '1';
-      highlightBox.style.border = `2px solid #2196F3`;
+      // MODIFIED: Increased border thickness for prominence
+      highlightBox.style.border = `2px solid ${highlightBorderColor}`; // 2px or 3px solid border
 
-      const pageElement = document.querySelector('.react-pdf__Page'); // This selects the current page
+      const pageElement = document.querySelector('.react-pdf__Page');
       if (pageElement) {
         pageElement.appendChild(highlightBox);
         highlightBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
